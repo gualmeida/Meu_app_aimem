@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exame de Consciência PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --primary: #2c3e50; --accent: #e74c3c; --success: #27ae60; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 500px; width: 100%; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); font-size: 24px; margin-bottom: 10px; }
+        .desc { text-align: center; color: #666; font-size: 14px; margin-bottom: 20px; }
+        .list { max-height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 10px; }
+        .item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f9f9f9; cursor: pointer; transition: background 0.2s; }
+        .item:hover { background: #f8f9fa; }
+        input[type="checkbox"] { margin-right: 15px; transform: scale(1.2); }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: opacity 0.3s; }
+        button:hover { opacity: 0.9; }
+        .hidden { display: none; }
+        .penitence-item { background: #fffcf0; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 5px solid #f1c40f; cursor: pointer; }
+        .done { text-decoration: line-through; opacity: 0.5; background: #e8f5e9; border-left-color: var(--success); }
+        .status { text-align: center; font-weight: bold; margin-top: 15px; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container" id="step1">
+    <h1>Exame de Consciência</h1>
+    <p class="desc">Selecione com honestidade para gerar sua penitência.</p>
+    <div class="list" id="pecados-lista"></div>
+    <button onclick="gerarPenitencia()">Gerar Lista de Penitência</button>
+</div>
+
+<div class="container hidden" id="step2">
+    <h1>Sua Penitência</h1>
+    <p class="desc">Toque em cada item após completar a ação.</p>
+    <div id="penitencia-lista"></div>
+    <div class="status" id="progresso"></div>
+    <button id="btn-perdao" class="hidden" style="background: var(--success);" onclick="resetar()">Estou Perdoado!</button>
+</div>
+
+<script>
+    [span_1](start_span)// Mapeamento de pecados por gravidade[span_1](end_span)
+    const pecadosDB = [
+        { nome: "Aborto", peso: "alto" }, { nome: "Assassinato", peso: "alto" },
+        { nome: "Adultério", peso: "alto" }, { nome: "Pedofilia", peso: "alto" },
+        { nome: "Pacto Satânico", peso: "alto" }, { nome: "Estupro", peso: "alto" },
+        { nome: "Roubo/Ladrão", peso: "alto" }, { nome: "Idolatria", peso: "alto" },
+        { nome: "Mentira", peso: "baixo" }, { nome: "Preguiça", peso: "baixo" },
+        { nome: "Palavrões", peso: "baixo" }, { nome: "Arrogante", peso: "medio" },
+        { nome: "Briguento", peso: "medio" }, { nome: "Vício do Cigarro", peso: "medio" },
+        { nome: "Pornografia", peso: "medio" }, { nome: "Fornicação", peso: "alto" },
+        { nome: "Retenção de Dízimos", peso: "medio" }, { nome: "Inveja", peso: "medio" },
+        { nome: "Glutonaria", peso: "baixo" }, { nome: "Jogos de Azar", peso: "medio" }
+        // ... adicione outros conforme o PDF
+    ];
+
+    const penitenciasSugeridas = {
+        alto: "Fazer uma Confissão com um Sacerdote e realizar um dia de jejum.",
+        medio: "Rezar um Terço completo e fazer uma obra de caridade.",
+        baixo: "Rezar 3 Pai Nossos e pedir perdão a quem você ofendeu."
+    };
+
+    const listaDiv = document.getElementById('pecados-lista');
+    pecadosDB.sort((a,b) => a.nome.localeCompare(b.nome)).forEach((p, i) => {
+        listaDiv.innerHTML += `
+            <label class="item">
+                <input type="checkbox" data-peso="${p.peso}" value="${p.nome}"> 
+                ${p.nome}
+            </label>`;
+    });
+
+    function gerarPenitencia() {
+        const selecionados = document.querySelectorAll('#pecados-lista input:checked');
+        if (selecionados.length === 0) return alert("Selecione algo para prosseguir.");
+
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
+
+        const penDiv = document.getElementById('penitencia-lista');
+        penDiv.innerHTML = "";
+        
+        selecionados.forEach((p, index) => {
+            const acao = penitenciasSugeridas[p.dataset.peso];
+            penDiv.innerHTML += `
+                <div class="penitence-item" id="pen-${index}" onclick="marcarConcluido(${index})">
+                    <strong>${p.value}:</strong><br>${acao}
+                </div>`;
+        });
+        atualizarProgresso();
+    }
+
+    function marcarConcluido(id) {
+        document.getElementById(`pen-${id}`).classList.toggle('done');
+        atualizarProgresso();
+    }
+
+    function atualizarProgresso() {
+        const total = document.querySelectorAll('.penitence-item').length;
+        const concluidos = document.querySelectorAll('.penitence-item.done').length;
+        document.getElementById('progresso').innerText = `Progresso: ${concluidos} / ${total}`;
+        
+        if (total > 0 && concluidos === total) {
+            document.getElementById('btn-perdao').classList.remove('hidden');
+        } else {
+            document.getElementById('btn-perdao').classList.add('hidden');
+        }
+    }
+
+    function resetar() {
+        alert("Vá em paz. Você está perdoado e pronto para começar de novo!");
+        location.reload();
+    }
+
+    // Registro do Service Worker para PWA [Referência ao sw.js]
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log("PWA Ativo!"))
+        .catch(err => console.log("Erro no PWA:", err));
+    }
+</script>
+
+</body>
+</html>
